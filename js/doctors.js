@@ -181,7 +181,10 @@ async function handleFormSubmit(e) {
       if (idx !== -1) {
         doctorsCache[idx] = { ...doctorsCache[idx], ...doctorData };
         const card = document.querySelector(`.doctor-card[data-id="${existingId}"]`);
-        if (card) card.outerHTML = renderDoctorCard(doctorsCache[idx]);
+        if (card) {
+          card.insertAdjacentHTML('afterend', renderDoctorCard(doctorsCache[idx]));
+          card.remove();
+        }
       }
       showToast('Doctor updated successfully.', 'success');
     } else {

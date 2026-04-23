@@ -10,6 +10,12 @@ import { getAllAppointments, updateAppointmentStatus } from './admin-db.js';
 /** All loaded appointments (used for client-side filtering). */
 let allAppointments = [];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ─── Rendering ───────────────────────────────────────────────────────────────
 
 /**
@@ -49,7 +55,7 @@ export function renderAppointmentRow(appt) {
 function renderSkeletonRows(count = 5) {
   return Array.from({ length: count }, () => `
     <tr class="skeleton-row">
-      ${Array.from({ length: 6 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + Math.random() * 60 | 0}px"></div></td>`).join('')}
+      ${Array.from({ length: 6 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + (Math.random() * 60 | 0)}px"></div></td>`).join('')}
     </tr>`).join('');
 }
 
@@ -119,10 +125,6 @@ window.confirmAppt = (id, userId) => setStatus(id, userId, 'confirmed');
 window.cancelAppt  = (id, userId) => setStatus(id, userId, 'cancelled');
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-
-function escapeHtml(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
 
 async function init() {
   const adminUser = await requireAdminAuth();

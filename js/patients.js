@@ -48,7 +48,7 @@ export function renderPatientRow(patient) {
 function renderSkeletonRows(count = 6) {
   return Array.from({ length: count }, () => `
     <tr class="skeleton-row">
-      ${Array.from({ length: 6 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + Math.random() * 80 | 0}px"></div></td>`).join('')}
+      ${Array.from({ length: 6 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + (Math.random() * 80 | 0)}px"></div></td>`).join('')}
     </tr>`).join('');
 }
 

@@ -74,7 +74,7 @@ function wireHamburger() {
   document.addEventListener('click', (e) => {
     if (sidebar.classList.contains('open') &&
         !sidebar.contains(e.target) &&
-        e.target !== hamburger) {
+        !hamburger.contains(e.target)) {
       sidebar.classList.remove('open');
     }
   });

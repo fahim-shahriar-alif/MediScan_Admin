@@ -150,7 +150,7 @@ export async function addDoctor(data) {
  * @returns {Promise<void>}
  */
 export async function updateDoctor(doctorId, data) {
-  await setDoc(doc(db, 'doctors', doctorId), data, { merge: true });
+  await updateDoc(doc(db, 'doctors', doctorId), data);
 }
 
 /**
