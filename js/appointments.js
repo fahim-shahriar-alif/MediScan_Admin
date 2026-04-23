@@ -31,6 +31,9 @@ export function renderAppointmentRow(appt) {
   }[appt.status] || 'badge-pending';
 
   const patientName   = appt.patientName || 'Unknown Patient';
+  const patientPhone  = appt.patientPhone
+    ? `<div><a href="tel:${escapeHtml(appt.patientPhone)}" style="font-size:.75rem;color:var(--text-muted);text-decoration:none">${escapeHtml(appt.patientPhone)}</a></div>`
+    : '';
   const formattedDate = appt.date ? new Date(appt.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
   const confirmation  = appt.confirmationNumber
     ? `<span style="font-family:monospace;font-size:.8rem">${escapeHtml(appt.confirmationNumber)}</span>`
@@ -38,7 +41,7 @@ export function renderAppointmentRow(appt) {
 
   return `
     <tr data-id="${appt.id}" data-user-id="${appt.userId}">
-      <td>${escapeHtml(patientName)}</td>
+      <td>${escapeHtml(patientName)}${patientPhone}</td>
       <td>${escapeHtml(appt.doctorName)}</td>
       <td>${escapeHtml(formattedDate)}</td>
       <td>${escapeHtml(appt.time)}</td>

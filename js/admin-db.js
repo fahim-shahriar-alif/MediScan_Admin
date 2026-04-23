@@ -79,15 +79,18 @@ export async function getAllAppointments() {
   );
 
   return appointments.map(({ d, userId, data }) => {
-    let patientName = data.patientName || data.patientEmail || '';
+    let patientName  = data.patientName || data.patientEmail || '';
+    let patientPhone = null;
     if (!patientName) {
       const userData = userDocCache[userId];
-      patientName = userData?.displayName || userData?.name || userData?.fullName || userData?.email || 'Unknown Patient';
+      patientName  = userData?.displayName || userData?.name || userData?.fullName || userData?.email || 'Unknown Patient';
+      patientPhone = userData?.phone || null;
     }
     return {
       id:                 d.id,
       userId,
       patientName,
+      patientPhone,
       doctorName:         data.doctorName         || '',
       date:               data.date               || '',
       time:               data.timeLabel          || data.time || '',
