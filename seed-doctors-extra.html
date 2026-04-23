@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Extra Doctors — MediScan</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+    }
+
+    h1 {
+      color: #2563eb;
+      margin-top: 0;
+    }
+
+    .info {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 12px 28px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    button:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+
+    #log {
+      margin-top: 24px;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 14px;
+      display: none;
+    }
+
+    .log-line {
+      padding: 2px 0;
+    }
+
+    .ok {
+      color: #15803d;
+    }
+
+    .err {
+      color: #dc2626;
+    }
+
+    .done {
+      color: #2563eb;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .separator {
+      color: #94a3b8;
+      padding: 4px 0;
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>🩺 Seed Extra Doctors (6 total)</h1>
+    <div class="info">
+      <strong>⚠️ One-time setup:</strong> Inserts 2 doctors each for Infectious Disease Specialist, Internal Medicine,
+      and General Physician / Microbiologist. Delete this file after use.
+    </div>
+    <button id="seedBtn" onclick="seedDoctors()">Insert 6 Doctors</button>
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    import { db } from './js/admin-firebase.js';
+    import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const doctors = [
+      // ── Infectious Disease Specialist ───────────────────────────────────────
+      { name: "Dr. Shafiqul Islam Bhuiyan", specialty: "Infectious Disease Specialist", address: "Mugda Medical College Hospital, Mugda, Dhaka", phone: "+880 1761-200001", rating: 4.8, reviews: 326 },
+      { name: "Dr. Tahmina Shirin", specialty: "Infectious Disease Specialist", address: "Kurmitola General Hospital, Cantonment, Dhaka", phone: "+880 1761-200002", rating: 3.2, reviews: 48 },
+
+      // ── Internal Medicine ────────────────────────────────────────────────────
+      { name: "Dr. A.K.M. Mosharraf Hossain", specialty: "Internal Medicine", address: "Bangabandhu Sheikh Mujib Medical University, Dhaka", phone: "+880 1762-200003", rating: 4.9, reviews: 412 },
+      { name: "Dr. Farhana Akter Mitu", specialty: "Internal Medicine", address: "Ibn Sina Hospital, Dhanmondi, Dhaka", phone: "+880 1762-200004", rating: 3.1, reviews: 39 },
+
+      // ── General Physician / Microbiologist ───────────────────────────────────
+      { name: "Dr. Md. Anisur Rahman", specialty: "General Physician / Microbiologist", address: "Popular Medical College, Dhanmondi, Dhaka", phone: "+880 1763-200005", rating: 4.7, reviews: 284 },
+      { name: "Dr. Sumaiya Nazneen", specialty: "General Physician / Microbiologist", address: "Shaheed Suhrawardy Medical College, Dhaka", phone: "+880 1763-200006", rating: 3.3, reviews: 52 },
+    ];
+
+    window.seedDoctors = async function () {
+      const btn = document.getElementById('seedBtn');
+      const log = document.getElementById('log');
+      btn.disabled = true;
+      btn.textContent = 'Inserting…';
+      log.style.display = 'block';
+      log.innerHTML = '';
+
+      let success = 0, failed = 0;
+      let lastSpecialty = '';
+
+      for (const doctor of doctors) {
+        if (doctor.specialty !== lastSpecialty) {
+          log.innerHTML += `<div class="log-line separator">── ${doctor.specialty} ──</div>`;
+          lastSpecialty = doctor.specialty;
+        }
+        try {
+          await addDoc(collection(db, 'doctors'), {
+            name: doctor.name,
+            specialty: doctor.specialty,
+            address: doctor.address,
+            phone: doctor.phone,
+            rating: doctor.rating,
+            reviews: doctor.reviews,
+            createdAt: serverTimestamp(),
+          });
+          success++;
+          const tag = doctor.reviews > 100 ? '⭐ Senior' : '🆕 Junior';
+          log.innerHTML += `<div class="log-line ok">✅ ${tag} — ${doctor.name} (${doctor.rating}★, ${doctor.reviews} reviews)</div>`;
+        } catch (err) {
+          failed++;
+          log.innerHTML += `<div class="log-line err">❌ ${doctor.name} — ${err.message}</div>`;
+        }
+        log.scrollTop = log.scrollHeight;
+      }
+
+      log.innerHTML += `<div class="log-line done">✅ Done! ${success} inserted, ${failed} failed.</div>`;
+      btn.textContent = 'Done!';
+    };
+  </script>
+</body>
+
+</html>
