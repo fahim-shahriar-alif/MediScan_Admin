@@ -70,7 +70,7 @@ export async function getAllAppointments() {
   return appointments.map(({ d, userId, data }, i) => {
     const userSnap = userDocs[i];
     const userData = userSnap?.exists() ? userSnap.data() : null;
-    const patientName = userData?.displayName || userData?.email || 'Unknown Patient';
+    const patientName = userData?.displayName || userData?.name || userData?.fullName || userData?.email || 'Unknown Patient';
     return {
       id:                 d.id,
       userId,
