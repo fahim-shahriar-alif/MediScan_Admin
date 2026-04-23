@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Doctors — MediScan</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+    }
+
+    h1 {
+      color: #2563eb;
+      margin-top: 0;
+    }
+
+    .info {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 12px 28px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    button:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+
+    #log {
+      margin-top: 24px;
+      font-size: 13px;
+      max-height: 500px;
+      overflow-y: auto;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 14px;
+      display: none;
+    }
+
+    .log-line {
+      padding: 2px 0;
+    }
+
+    .ok {
+      color: #15803d;
+    }
+
+    .err {
+      color: #dc2626;
+    }
+
+    .done {
+      color: #2563eb;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .separator {
+      color: #94a3b8;
+      padding: 4px 0;
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>🩺 Seed Doctors (114 total)</h1>
+    <div class="info">
+      <strong>⚠️ One-time setup:</strong> Inserts 2 doctors per specialty (1 highly rated senior + 1 lower rated junior)
+      into Firestore. Delete this file after use.
+    </div>
+    <button id="seedBtn" onclick="seedDoctors()">Insert All 114 Doctors</button>
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    import { db } from './js/admin-firebase.js';
+    import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    // Each specialty has [senior (high rating, many reviews), junior (lower rating, fewer reviews)]
+    const doctors = [
+      // ── Primary & General Care ──────────────────────────────────────────────
+      { name: "Dr. Md. Rafiqul Islam", specialty: "Family Practitioner", address: "12 Mirpur Road, Dhaka", phone: "+880 1711-100001", rating: 4.8, reviews: 312 },
+      { name: "Dr. Sumaiya Akter", specialty: "Family Practitioner", address: "34 Mohammadpur, Dhaka", phone: "+880 1711-100002", rating: 3.2, reviews: 41 },
+
+      { name: "Dr. Nasrin Akter", specialty: "Internist", address: "45 Dhanmondi, Dhaka", phone: "+880 1712-100003", rating: 4.7, reviews: 278 },
+      { name: "Dr. Tanvir Hossain", specialty: "Internist", address: "67 Rayer Bazar, Dhaka", phone: "+880 1712-100004", rating: 3.1, reviews: 38 },
+
+      { name: "Dr. Tahmina Begum", specialty: "Pediatrician", address: "78 Gulshan Avenue, Dhaka", phone: "+880 1713-100005", rating: 4.9, reviews: 401 },
+      { name: "Dr. Ariful Islam", specialty: "Pediatrician", address: "22 Tongi, Gazipur", phone: "+880 1713-100006", rating: 3.3, reviews: 52 },
+
+      { name: "Dr. Abdul Karim Chowdhury", specialty: "Geriatrician", address: "23 Agrabad, Chittagong", phone: "+880 1714-100007", rating: 4.6, reviews: 189 },
+      { name: "Dr. Farhana Noor", specialty: "Geriatrician", address: "55 Halishahar, Chittagong", phone: "+880 1714-100008", rating: 3.0, reviews: 29 },
+
+      { name: "Dr. Farhana Hossain", specialty: "Hospitalist", address: "Dhaka Medical College Hospital, Dhaka", phone: "+880 1715-100009", rating: 4.5, reviews: 210 },
+      { name: "Dr. Rakibul Hasan", specialty: "Hospitalist", address: "Mugda Medical College Hospital, Dhaka", phone: "+880 1715-100010", rating: 3.2, reviews: 44 },
+
+      // ── Head, Neck & Senses ─────────────────────────────────────────────────
+      { name: "Dr. Shahadat Hossain", specialty: "Neurologist", address: "National Institute of Neurosciences, Dhaka", phone: "+880 1716-100011", rating: 4.8, reviews: 334 },
+      { name: "Dr. Mithila Chowdhury", specialty: "Neurologist", address: "56 Elephant Road, Dhaka", phone: "+880 1716-100012", rating: 3.4, reviews: 47 },
+
+      { name: "Dr. Roksana Parvin", specialty: "Psychiatrist", address: "National Mental Health Institute, Dhaka", phone: "+880 1717-100013", rating: 4.7, reviews: 295 },
+      { name: "Dr. Imran Kabir", specialty: "Psychiatrist", address: "34 Uttara Sector 7, Dhaka", phone: "+880 1717-100014", rating: 3.1, reviews: 36 },
+
+      { name: "Dr. Aminul Islam", specialty: "Ophthalmologist", address: "National Eye Care, Agargaon, Dhaka", phone: "+880 1718-100015", rating: 4.9, reviews: 420 },
+      { name: "Dr. Sadia Rahman", specialty: "Ophthalmologist", address: "89 Sylhet Sadar, Sylhet", phone: "+880 1718-100016", rating: 3.3, reviews: 55 },
+
+      { name: "Dr. Mahmuda Khanam", specialty: "Otolaryngologist (ENT)", address: "67 Banani, Dhaka", phone: "+880 1719-100017", rating: 4.6, reviews: 241 },
+      { name: "Dr. Sabbir Ahmed", specialty: "Otolaryngologist (ENT)", address: "44 Narayanganj Sadar, Narayanganj", phone: "+880 1719-100018", rating: 3.0, reviews: 31 },
+
+      { name: "Dr. Rezaul Karim", specialty: "Audiologist", address: "11 Khulna Sadar, Khulna", phone: "+880 1720-100019", rating: 4.5, reviews: 167 },
+      { name: "Dr. Nadia Islam", specialty: "Audiologist", address: "33 Jessore Road, Khulna", phone: "+880 1720-100020", rating: 3.2, reviews: 40 },
+
+      { name: "Dr. Imtiaz Ahmed", specialty: "Neurosurgeon", address: "National Institute of Neurosciences, Dhaka", phone: "+880 1721-100021", rating: 4.9, reviews: 388 },
+      { name: "Dr. Wahid Zaman", specialty: "Neurosurgeon", address: "Square Hospital, Panthapath, Dhaka", phone: "+880 1721-100022", rating: 3.5, reviews: 62 },
+
+      // ── Core Organ Systems ──────────────────────────────────────────────────
+      { name: "Dr. Shirin Sultana", specialty: "Cardiologist", address: "National Heart Foundation, Mirpur, Dhaka", phone: "+880 1722-100023", rating: 4.9, reviews: 456 },
+      { name: "Dr. Farhan Uddin", specialty: "Cardiologist", address: "Ibrahim Cardiac Hospital, Dhaka", phone: "+880 1722-100024", rating: 3.3, reviews: 58 },
+
+      { name: "Dr. Monirul Islam", specialty: "Pulmonologist", address: "National Institute of Diseases of Chest, Dhaka", phone: "+880 1723-100025", rating: 4.7, reviews: 263 },
+      { name: "Dr. Tania Sultana", specialty: "Pulmonologist", address: "90 Rajshahi Medical, Rajshahi", phone: "+880 1723-100026", rating: 3.1, reviews: 37 },
+
+      { name: "Dr. Hasina Begum", specialty: "Gastroenterologist", address: "Bangabandhu Sheikh Mujib Medical University, Dhaka", phone: "+880 1724-100027", rating: 4.8, reviews: 317 },
+      { name: "Dr. Mahmudul Hasan", specialty: "Gastroenterologist", address: "33 Farmgate, Dhaka", phone: "+880 1724-100028", rating: 3.2, reviews: 43 },
+
+      { name: "Dr. Zahirul Haque", specialty: "Hepatologist", address: "Bangabandhu Sheikh Mujib Medical University, Dhaka", phone: "+880 1725-100029", rating: 4.7, reviews: 284 },
+      { name: "Dr. Rubina Khatun", specialty: "Hepatologist", address: "55 Mymensingh Road, Dhaka", phone: "+880 1725-100030", rating: 3.0, reviews: 28 },
+
+      { name: "Dr. Salma Khatun", specialty: "Nephrologist", address: "Kidney Foundation Hospital, Mirpur, Dhaka", phone: "+880 1726-100031", rating: 4.6, reviews: 198 },
+      { name: "Dr. Asif Mahmud", specialty: "Nephrologist", address: "22 Bashundhara R/A, Dhaka", phone: "+880 1726-100032", rating: 3.3, reviews: 49 },
+
+      { name: "Dr. Nurul Amin", specialty: "Endocrinologist", address: "BIRDEM General Hospital, Dhaka", phone: "+880 1727-100033", rating: 4.8, reviews: 342 },
+      { name: "Dr. Sharifa Begum", specialty: "Endocrinologist", address: "44 Comilla Sadar, Comilla", phone: "+880 1727-100034", rating: 3.1, reviews: 35 },
+
+      { name: "Dr. Farida Yasmin", specialty: "Urologist", address: "Dhaka Medical College Hospital, Dhaka", phone: "+880 1728-100035", rating: 4.5, reviews: 176 },
+      { name: "Dr. Nazmul Karim", specialty: "Urologist", address: "77 Gulshan 2, Dhaka", phone: "+880 1728-100036", rating: 3.2, reviews: 42 },
+
+      // ── Structural & Surface Health ─────────────────────────────────────────
+      { name: "Dr. Tanvir Ahmed", specialty: "Dermatologist", address: "Popular Medical College, Dhanmondi, Dhaka", phone: "+880 1729-100037", rating: 4.8, reviews: 365 },
+      { name: "Dr. Lamia Hossain", specialty: "Dermatologist", address: "38 Wari, Dhaka", phone: "+880 1729-100038", rating: 3.3, reviews: 54 },
+
+      { name: "Dr. Nasima Akter", specialty: "Orthopedist", address: "National Orthopedic Hospital, Dhaka", phone: "+880 1730-100039", rating: 4.7, reviews: 299 },
+      { name: "Dr. Golam Kibria", specialty: "Orthopedist", address: "61 Narayanganj Sadar, Narayanganj", phone: "+880 1730-100040", rating: 3.1, reviews: 39 },
+
+      { name: "Dr. Kamal Uddin", specialty: "Rheumatologist", address: "Bangabandhu Sheikh Mujib Medical University, Dhaka", phone: "+880 1731-100041", rating: 4.6, reviews: 212 },
+      { name: "Dr. Anika Tasnim", specialty: "Rheumatologist", address: "38 Dhanmondi 27, Dhaka", phone: "+880 1731-100042", rating: 3.0, reviews: 27 },
+
+      { name: "Dr. Sabina Easmin", specialty: "Physiatrist (PM&R)", address: "CRP Rehabilitation Centre, Savar", phone: "+880 1732-100043", rating: 4.5, reviews: 183 },
+      { name: "Dr. Rafiqul Hasan", specialty: "Physiatrist (PM&R)", address: "Centre for the Rehabilitation of the Paralysed, Dhaka", phone: "+880 1732-100044", rating: 3.2, reviews: 41 },
+
+      { name: "Dr. Mizanur Rahman", specialty: "Podiatrist", address: "United Hospital, Gulshan, Dhaka", phone: "+880 1733-100045", rating: 4.4, reviews: 154 },
+      { name: "Dr. Bristy Akter", specialty: "Podiatrist", address: "61 Narayanganj Sadar, Narayanganj", phone: "+880 1733-100046", rating: 3.1, reviews: 33 },
+
+      { name: "Dr. Arif Hossain", specialty: "Sports Medicine Specialist", address: "BKSP Sports Complex, Savar", phone: "+880 1734-100047", rating: 4.6, reviews: 221 },
+      { name: "Dr. Mehedi Hassan", specialty: "Sports Medicine Specialist", address: "Evercare Hospital, Bashundhara", phone: "+880 1734-100048", rating: 3.3, reviews: 50 },
+
+      // ── Reproductive Health ─────────────────────────────────────────────────
+      { name: "Dr. Dilruba Akter", specialty: "Gynecologist", address: "Dhaka Medical College Hospital, Dhaka", phone: "+880 1735-100049", rating: 4.9, reviews: 478 },
+      { name: "Dr. Nusrat Jahan", specialty: "Gynecologist", address: "50 Azimpur, Dhaka", phone: "+880 1735-100050", rating: 3.2, reviews: 46 },
+
+      { name: "Dr. Sharmin Nahar", specialty: "Obstetrician", address: "Bangabandhu Sheikh Mujib Medical University, Dhaka", phone: "+880 1736-100051", rating: 4.8, reviews: 392 },
+      { name: "Dr. Fatema Begum", specialty: "Obstetrician", address: "Ibn Sina Hospital, Dhanmondi, Dhaka", phone: "+880 1736-100052", rating: 3.3, reviews: 57 },
+
+      { name: "Dr. Rehana Sultana", specialty: "Reproductive Endocrinologist", address: "Infertility Care Centre, Uttara, Dhaka", phone: "+880 1737-100053", rating: 4.7, reviews: 256 },
+      { name: "Dr. Sanjida Islam", specialty: "Reproductive Endocrinologist", address: "29 Motijheel, Dhaka", phone: "+880 1737-100054", rating: 3.1, reviews: 34 },
+
+      { name: "Dr. Mahbubur Rahman", specialty: "Andrologist", address: "Apollo Hospitals, Bashundhara, Dhaka", phone: "+880 1738-100055", rating: 4.5, reviews: 172 },
+      { name: "Dr. Shafiul Alam", specialty: "Andrologist", address: "44 Comilla Sadar, Comilla", phone: "+880 1738-100056", rating: 3.0, reviews: 26 },
+
+      // ── Specialized Disease & Immune Care ───────────────────────────────────
+      { name: "Dr. Laila Arjumand", specialty: "Oncologist", address: "National Cancer Institute, Mohakhali, Dhaka", phone: "+880 1739-100057", rating: 4.9, reviews: 445 },
+      { name: "Dr. Kamrul Islam", specialty: "Oncologist", address: "Delta Medical College, Mirpur, Dhaka", phone: "+880 1739-100058", rating: 3.4, reviews: 61 },
+
+      { name: "Dr. Fazlur Rahman", specialty: "Hematologist", address: "Dhaka Medical College Hospital, Dhaka", phone: "+880 1740-100059", rating: 4.7, reviews: 267 },
+      { name: "Dr. Marium Akter", specialty: "Hematologist", address: "43 Wari, Dhaka", phone: "+880 1740-100060", rating: 3.2, reviews: 44 },
+
+      { name: "Dr. Rehana Begum", specialty: "Allergist / Immunologist", address: "Shaheed Suhrawardy Medical College, Dhaka", phone: "+880 1741-100061", rating: 4.6, reviews: 203 },
+      { name: "Dr. Touhid Hossain", specialty: "Allergist / Immunologist", address: "43 Wari, Dhaka", phone: "+880 1741-100062", rating: 3.1, reviews: 36 },
+
+      { name: "Dr. Shafiqul Islam", specialty: "Infectious Disease Specialist", address: "Mugda Medical College Hospital, Dhaka", phone: "+880 1742-100063", rating: 4.8, reviews: 318 },
+      { name: "Dr. Nasreen Sultana", specialty: "Infectious Disease Specialist", address: "Kurmitola General Hospital, Dhaka", phone: "+880 1742-100064", rating: 3.3, reviews: 53 },
+
+      { name: "Dr. Morsheda Khanam", specialty: "Palliative Care Physician", address: "Holy Family Red Crescent Hospital, Dhaka", phone: "+880 1743-100065", rating: 4.5, reviews: 161 },
+      { name: "Dr. Zahid Hasan", specialty: "Palliative Care Physician", address: "Comfort Nursing Home, Sylhet", phone: "+880 1743-100066", rating: 3.0, reviews: 28 },
+
+      // ── Surgical Specialties ────────────────────────────────────────────────
+      { name: "Dr. Anisur Rahman", specialty: "General Surgeon", address: "Square Hospital, Panthapath, Dhaka", phone: "+880 1744-100067", rating: 4.8, reviews: 356 },
+      { name: "Dr. Rashed Karim", specialty: "General Surgeon", address: "Chittagong Medical College Hospital", phone: "+880 1744-100068", rating: 3.2, reviews: 45 },
+
+      { name: "Dr. Khurshid Alam", specialty: "Cardiothoracic Surgeon", address: "National Heart Foundation, Mirpur, Dhaka", phone: "+880 1745-100069", rating: 4.9, reviews: 412 },
+      { name: "Dr. Aminur Rashid", specialty: "Cardiothoracic Surgeon", address: "United Hospital, Gulshan, Dhaka", phone: "+880 1745-100070", rating: 3.4, reviews: 59 },
+
+      { name: "Dr. Taslima Begum", specialty: "Vascular Surgeon", address: "Evercare Hospital, Bashundhara, Dhaka", phone: "+880 1746-100071", rating: 4.7, reviews: 248 },
+      { name: "Dr. Shahriar Hossain", specialty: "Vascular Surgeon", address: "Labaid Specialized Hospital, Dhaka", phone: "+880 1746-100072", rating: 3.1, reviews: 37 },
+
+      { name: "Dr. Habibur Rahman", specialty: "Colorectal Surgeon", address: "Dhaka Medical College Hospital, Dhaka", phone: "+880 1747-100073", rating: 4.6, reviews: 194 },
+      { name: "Dr. Fariha Tasnim", specialty: "Colorectal Surgeon", address: "Popular Medical College, Dhaka", phone: "+880 1747-100074", rating: 3.2, reviews: 42 },
+
+      { name: "Dr. Farzana Islam", specialty: "Plastic / Reconstructive Surgeon", address: "Apollo Hospitals, Bashundhara, Dhaka", phone: "+880 1748-100075", rating: 4.7, reviews: 273 },
+      { name: "Dr. Nabil Ahmed", specialty: "Plastic / Reconstructive Surgeon", address: "Aesthetic Care Centre, Gulshan, Dhaka", phone: "+880 1748-100076", rating: 3.3, reviews: 51 },
+
+      { name: "Dr. Golam Mostafa", specialty: "Oral & Maxillofacial Surgeon", address: "Dhaka Dental College, Mirpur, Dhaka", phone: "+880 1749-100077", rating: 4.5, reviews: 168 },
+      { name: "Dr. Israt Jahan", specialty: "Oral & Maxillofacial Surgeon", address: "Bangladesh Dental College, Dhaka", phone: "+880 1749-100078", rating: 3.1, reviews: 35 },
+
+      // ── Children's Sub-Specialties ──────────────────────────────────────────
+      { name: "Dr. Sumaiya Khanam", specialty: "Neonatologist", address: "Dhaka Shishu Hospital, Sher-e-Bangla Nagar, Dhaka", phone: "+880 1750-100079", rating: 4.9, reviews: 437 },
+      { name: "Dr. Mizanur Hossain", specialty: "Neonatologist", address: "Chittagong Mother & Child Hospital", phone: "+880 1750-100080", rating: 3.3, reviews: 56 },
+
+      { name: "Dr. Rezwanul Haque", specialty: "Pediatric Cardiologist", address: "National Institute of Cardiovascular Diseases, Dhaka", phone: "+880 1751-100081", rating: 4.8, reviews: 321 },
+      { name: "Dr. Sabrina Akter", specialty: "Pediatric Cardiologist", address: "Dhaka Shishu Hospital, Dhaka", phone: "+880 1751-100082", rating: 3.2, reviews: 43 },
+
+      { name: "Dr. Afroza Khanam", specialty: "Pediatric Oncologist", address: "Dhaka Shishu Hospital, Dhaka", phone: "+880 1752-100083", rating: 4.7, reviews: 258 },
+      { name: "Dr. Raihan Islam", specialty: "Pediatric Oncologist", address: "National Cancer Institute, Dhaka", phone: "+880 1752-100084", rating: 3.1, reviews: 34 },
+
+      { name: "Dr. Nazmul Hasan", specialty: "Developmental Pediatrician", address: "Institute of Paediatric Neurodisorder, Dhaka", phone: "+880 1753-100085", rating: 4.6, reviews: 207 },
+      { name: "Dr. Poly Begum", specialty: "Developmental Pediatrician", address: "Autism Welfare Foundation, Dhaka", phone: "+880 1753-100086", rating: 3.0, reviews: 29 },
+
+      // ── Diagnostic & Emergency Care ─────────────────────────────────────────
+      { name: "Dr. Shahidul Islam", specialty: "Emergency Physician", address: "Dhaka Medical College Hospital, ER", phone: "+880 1754-100087", rating: 4.7, reviews: 289 },
+      { name: "Dr. Rifat Hossain", specialty: "Emergency Physician", address: "Chittagong Medical College Hospital, ER", phone: "+880 1754-100088", rating: 3.2, reviews: 47 },
+
+      { name: "Dr. Monira Sultana", specialty: "Radiologist", address: "Ibn Sina Hospital, Dhanmondi, Dhaka", phone: "+880 1755-100089", rating: 4.6, reviews: 215 },
+      { name: "Dr. Kawsar Ahmed", specialty: "Radiologist", address: "Popular Diagnostic Centre, Dhaka", phone: "+880 1755-100090", rating: 3.1, reviews: 38 },
+
+      { name: "Dr. Wahiduzzaman", specialty: "Anesthesiologist", address: "Labaid Specialized Hospital, Dhaka", phone: "+880 1756-100091", rating: 4.5, reviews: 174 },
+      { name: "Dr. Tasnuva Islam", specialty: "Anesthesiologist", address: "Square Hospital, Panthapath, Dhaka", phone: "+880 1756-100092", rating: 3.2, reviews: 41 },
+
+      { name: "Dr. Kohinoor Begum", specialty: "Pathologist", address: "Popular Medical College, Dhanmondi, Dhaka", phone: "+880 1757-100093", rating: 4.6, reviews: 196 },
+      { name: "Dr. Shamsul Huda", specialty: "Pathologist", address: "Dhaka Medical College Hospital, Dhaka", phone: "+880 1757-100094", rating: 3.0, reviews: 30 },
+
+      { name: "Dr. Asaduzzaman Khan", specialty: "Geneticist", address: "BIRDEM General Hospital, Dhaka", phone: "+880 1758-100095", rating: 4.7, reviews: 243 },
+      { name: "Dr. Mehnaz Parvin", specialty: "Geneticist", address: "Bangabandhu Sheikh Mujib Medical University, Dhaka", phone: "+880 1758-100096", rating: 3.2, reviews: 44 },
+
+      { name: "Dr. Mahmuda Sultana", specialty: "Intensivist", address: "Square Hospital ICU, Panthapath, Dhaka", phone: "+880 1759-100097", rating: 4.8, reviews: 307 },
+      { name: "Dr. Jahangir Alam", specialty: "Intensivist", address: "United Hospital ICU, Gulshan, Dhaka", phone: "+880 1759-100098", rating: 3.3, reviews: 52 },
+
+      { name: "Dr. Rafiqul Haque", specialty: "Toxicologist", address: "National Poison Control Centre, Dhaka", phone: "+880 1760-100099", rating: 4.5, reviews: 158 },
+      { name: "Dr. Sonia Akter", specialty: "Toxicologist", address: "Dhaka Medical College Hospital, Dhaka", phone: "+880 1760-100100", rating: 3.1, reviews: 32 },
+    ];
+
+    window.seedDoctors = async function () {
+      const btn = document.getElementById('seedBtn');
+      const log = document.getElementById('log');
+      btn.disabled = true;
+      btn.textContent = 'Inserting…';
+      log.style.display = 'block';
+      log.innerHTML = '';
+
+      let success = 0, failed = 0;
+      let lastSpecialty = '';
+
+      for (const doctor of doctors) {
+        if (doctor.specialty !== lastSpecialty) {
+          log.innerHTML += `<div class="log-line separator">── ${doctor.specialty} ──</div>`;
+          lastSpecialty = doctor.specialty;
+        }
+        try {
+          await addDoc(collection(db, 'doctors'), {
+            name: doctor.name,
+            specialty: doctor.specialty,
+            address: doctor.address,
+            phone: doctor.phone,
+            rating: doctor.rating,
+            reviews: doctor.reviews,
+            createdAt: serverTimestamp(),
+          });
+          success++;
+          const tag = doctor.reviews > 100 ? '⭐ Senior' : '🆕 Junior';
+          log.innerHTML += `<div class="log-line ok">✅ ${tag} — ${doctor.name} (${doctor.rating}★, ${doctor.reviews} reviews)</div>`;
+        } catch (err) {
+          failed++;
+          log.innerHTML += `<div class="log-line err">❌ ${doctor.name} — ${err.message}</div>`;
+        }
+        log.scrollTop = log.scrollHeight;
+      }
+
+      log.innerHTML += `<div class="log-line done">✅ Done! ${success} inserted, ${failed} failed.</div>`;
+      btn.textContent = 'Done!';
+    };
+  </script>
+</body>
+
+</html>
