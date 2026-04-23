@@ -124,10 +124,10 @@ export async function getAllPatients() {
     const data = d.data();
     return {
       id:          d.id,
-      displayName: data.displayName || data.email || 'Unknown',
-      email:       data.email       || '',
-      phone:       data.phone       || null,
-      createdAt:   data.createdAt   || null,
+      displayName: data.displayName || data.name || data.fullName || data.email || 'Unknown',
+      email:       data.email       || data.emailAddress || '',
+      phone:       data.phone       || data.phoneNumber  || null,
+      createdAt:   data.createdAt   || data.joinedAt     || null,
     };
   });
 }
