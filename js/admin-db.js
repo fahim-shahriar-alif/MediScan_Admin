@@ -53,7 +53,7 @@ export async function getAllAppointments() {
   const q    = query(collectionGroup(db, 'appointments'), orderBy('date', 'desc'));
   const snap = await getDocs(q);
 
-  // Fetch all user docs in parallel for patient name lookup
+  // Collect appointments and identify which ones need a user doc lookup
   const appointments = snap.docs.map(d => {
     const pathParts = d.ref.path.split('/');
     const userId = pathParts[1] || '';
@@ -61,16 +61,29 @@ export async function getAllAppointments() {
     return { d, userId, data };
   });
 
-  const userDocs = await Promise.all(
-    appointments.map(({ userId }) =>
-      userId ? getDoc(doc(db, 'users', userId)).catch(() => null) : Promise.resolve(null)
-    )
+  // Only fetch user docs for appointments missing patientName
+  const userDocCache = {};
+  await Promise.all(
+    appointments
+      .filter(({ data }) => !data.patientName)
+      .map(async ({ userId }) => {
+        if (userId && !userDocCache[userId]) {
+          try {
+            const snap = await getDoc(doc(db, 'users', userId));
+            userDocCache[userId] = snap.exists() ? snap.data() : null;
+          } catch {
+            userDocCache[userId] = null;
+          }
+        }
+      })
   );
 
-  return appointments.map(({ d, userId, data }, i) => {
-    const userSnap = userDocs[i];
-    const userData = userSnap?.exists() ? userSnap.data() : null;
-    const patientName = userData?.displayName || userData?.name || userData?.fullName || userData?.email || 'Unknown Patient';
+  return appointments.map(({ d, userId, data }) => {
+    let patientName = data.patientName || data.patientEmail || '';
+    if (!patientName) {
+      const userData = userDocCache[userId];
+      patientName = userData?.displayName || userData?.name || userData?.fullName || userData?.email || 'Unknown Patient';
+    }
     return {
       id:                 d.id,
       userId,
