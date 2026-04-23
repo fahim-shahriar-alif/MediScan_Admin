@@ -671,3 +671,76 @@ tbody td {
   color: var(--text-main);
   margin-bottom: 16px;
 }
+
+/* ── Dashboard bottom row ────────────────────────────────────────────────── */
+.dashboard-bottom {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .dashboard-bottom { flex-direction: column; }
+}
+
+/* ── Quick action buttons ────────────────────────────────────────────────── */
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-main);
+  font-size: .85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background .15s, border-color .15s;
+}
+
+.quick-action-btn:hover {
+  background: #e8f0fe;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ── Status breakdown bars ───────────────────────────────────────────────── */
+.status-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .8rem;
+}
+
+.status-bar-label {
+  width: 70px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.status-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .4s ease;
+}
+
+.status-bar-fill.confirmed { background: var(--success); }
+.status-bar-fill.pending   { background: var(--warning); }
+.status-bar-fill.cancelled { background: var(--danger);  }
+
+.status-bar-count {
+  width: 24px;
+  text-align: right;
+  color: var(--text-main);
+  font-weight: 600;
+}
