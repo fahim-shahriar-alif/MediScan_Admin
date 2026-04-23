@@ -95,6 +95,7 @@ export async function getAllPatients() {
       id:          d.id,
       displayName: data.displayName || data.email || 'Unknown',
       email:       data.email       || '',
+      phone:       data.phone       || null,
       createdAt:   data.createdAt   || null,
     };
   });

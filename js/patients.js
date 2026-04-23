@@ -34,10 +34,14 @@ function formatDate(ts) {
 export function renderPatientRow(patient) {
   const displayName = patient.displayName || patient.email || 'Unknown';
   const counts = patient.counts || { appointments: 0, analyses: 0, symptoms: 0 };
+  const phone = patient.phone
+    ? `<a href="tel:${escapeHtml(patient.phone)}" style="color:var(--primary);text-decoration:none">${escapeHtml(patient.phone)}</a>`
+    : '—';
   return `
     <tr>
       <td>${escapeHtml(displayName)}</td>
       <td>${escapeHtml(patient.email)}</td>
+      <td>${phone}</td>
       <td>${formatDate(patient.createdAt)}</td>
       <td>${counts.appointments}</td>
       <td>${counts.analyses}</td>
@@ -48,14 +52,14 @@ export function renderPatientRow(patient) {
 function renderSkeletonRows(count = 6) {
   return Array.from({ length: count }, () => `
     <tr class="skeleton-row">
-      ${Array.from({ length: 6 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + (Math.random() * 80 | 0)}px"></div></td>`).join('')}
+      ${Array.from({ length: 7 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + (Math.random() * 80 | 0)}px"></div></td>`).join('')}
     </tr>`).join('');
 }
 
 function renderRows(patients) {
   const tbody = document.getElementById('patientsBody');
   if (!patients.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No patients found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No patients found.</td></tr>`;
     return;
   }
   tbody.innerHTML = patients.map(renderPatientRow).join('');
@@ -106,7 +110,7 @@ async function init() {
     renderRows(allPatients);
   } catch (err) {
     console.error('Failed to load patients:', err);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--danger)">Failed to load patients.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--danger)">Failed to load patients.</td></tr>`;
   }
 
   // Search
