@@ -30,8 +30,11 @@ export function renderAppointmentRow(appt) {
     cancelled: 'badge-cancelled',
   }[appt.status] || 'badge-pending';
 
-  const patientName = appt.patientName || 'Unknown Patient';
+  const patientName   = appt.patientName || 'Unknown Patient';
   const formattedDate = appt.date ? new Date(appt.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+  const confirmation  = appt.confirmationNumber
+    ? `<span style="font-family:monospace;font-size:.8rem">${escapeHtml(appt.confirmationNumber)}</span>`
+    : '—';
 
   return `
     <tr data-id="${appt.id}" data-user-id="${appt.userId}">
@@ -39,6 +42,7 @@ export function renderAppointmentRow(appt) {
       <td>${escapeHtml(appt.doctorName)}</td>
       <td>${escapeHtml(formattedDate)}</td>
       <td>${escapeHtml(appt.time)}</td>
+      <td>${confirmation}</td>
       <td>
         <span class="badge ${badgeClass}" id="badge-${appt.id}">${appt.status}</span>
         <div class="row-error" id="err-${appt.id}"></div>
@@ -55,14 +59,14 @@ export function renderAppointmentRow(appt) {
 function renderSkeletonRows(count = 5) {
   return Array.from({ length: count }, () => `
     <tr class="skeleton-row">
-      ${Array.from({ length: 6 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + (Math.random() * 60 | 0)}px"></div></td>`).join('')}
+      ${Array.from({ length: 7 }, () => `<td><div class="skeleton skeleton-cell" style="width:${60 + (Math.random() * 60 | 0)}px"></div></td>`).join('')}
     </tr>`).join('');
 }
 
 function renderRows(appointments) {
   const tbody = document.getElementById('appointmentsBody');
   if (!appointments.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No appointments found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No appointments found.</td></tr>`;
     return;
   }
   tbody.innerHTML = appointments.map(renderAppointmentRow).join('');
@@ -138,7 +142,7 @@ async function init() {
     renderRows(allAppointments);
   } catch (err) {
     console.error('Failed to load appointments:', err);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--danger)">Failed to load appointments.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--danger)">Failed to load appointments.</td></tr>`;
   }
 
   // Search

@@ -10,6 +10,7 @@ import {
   collectionGroup,
   addDoc,
   getDocs,
+  getDoc,
   doc,
   setDoc,
   updateDoc,
@@ -52,19 +53,33 @@ export async function getAllAppointments() {
   const q    = query(collectionGroup(db, 'appointments'), orderBy('date', 'desc'));
   const snap = await getDocs(q);
 
-  return snap.docs.map(d => {
-    // ref.path = "users/{userId}/appointments/{appointmentId}"
+  // Fetch all user docs in parallel for patient name lookup
+  const appointments = snap.docs.map(d => {
     const pathParts = d.ref.path.split('/');
     const userId = pathParts[1] || '';
     const data   = d.data();
+    return { d, userId, data };
+  });
+
+  const userDocs = await Promise.all(
+    appointments.map(({ userId }) =>
+      userId ? getDoc(doc(db, 'users', userId)).catch(() => null) : Promise.resolve(null)
+    )
+  );
+
+  return appointments.map(({ d, userId, data }, i) => {
+    const userSnap = userDocs[i];
+    const userData = userSnap?.exists() ? userSnap.data() : null;
+    const patientName = userData?.displayName || userData?.email || 'Unknown Patient';
     return {
-      id:          d.id,
+      id:                 d.id,
       userId,
-      patientName: data.patientName || 'Unknown Patient',
-      doctorName:  data.doctorName  || '',
-      date:        data.date        || '',
-      time:        data.time        || '',
-      status:      data.status      || 'pending',
+      patientName,
+      doctorName:         data.doctorName         || '',
+      date:               data.date               || '',
+      time:               data.timeLabel          || data.time || '',
+      status:             data.status             || 'pending',
+      confirmationNumber: data.confirmationNumber || null,
     };
   });
 }
