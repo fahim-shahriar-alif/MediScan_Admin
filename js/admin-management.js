@@ -11,6 +11,13 @@ import {
   updateProfile,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
+  initializeApp,
+  getApps,
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth,
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
   collection,
   getDocs,
   doc,
@@ -18,6 +25,11 @@ import {
   deleteDoc,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// Secondary Firebase app — used to create new auth accounts without
+// signing out the current admin session
+const secondaryApp = initializeApp(auth.app.options, 'admin-secondary');
+const secondaryAuth = getAuth(secondaryApp);
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -147,11 +159,13 @@ async function handleCreateAdmin(e) {
   saveBtn.textContent = 'Creating…';
 
   try {
-    // Create Firebase Auth account
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    // Create Firebase Auth account using secondary app — keeps current admin signed in
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
     await updateProfile(cred.user, { displayName: name });
+    // Sign out of secondary app immediately — we don't need it anymore
+    await secondaryAuth.signOut();
 
-    // Write admins/{uid} document
+    // Write admins/{uid} document — current admin is still signed in so rules pass
     await setDoc(doc(db, 'admins', cred.user.uid), {
       role: 'admin',
       name,
