@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — MediScan</title>
+  <link rel="stylesheet" href="css/admin.css" />
+  <style>
+    /* Extra login-only overrides */
+    .login-badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <!-- Brand -->
+      <div class="login-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#2563EB" />
+          <path d="M16 7v18M7 16h18" stroke="#fff" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        <span class="login-logo-text">MediScan</span>
+      </div>
+      <span class="login-badge">Admin Portal</span>
+      <p class="login-subtitle">Sign in with your administrator credentials to access the management panel.</p>
+
+      <!-- Error banner -->
+      <div id="loginError" class="login-error" role="alert"></div>
+
+      <!-- Form -->
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">Email address</label>
+          <input id="email" type="email" class="form-input" placeholder="admin@hospital.com" autocomplete="email"
+            required />
+          <div id="emailError" class="form-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input id="password" type="password" class="form-input" placeholder="••••••••" autocomplete="current-password"
+            required />
+          <div id="passwordError" class="form-error"></div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-login">
+          Sign in to Admin Panel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { adminSignIn, requireAdminAuth } from './js/admin-auth.js';
+    import { onAuthStateChanged, auth } from './js/admin-firebase.js';
+
+    // If already signed in as admin, go straight to dashboard
+    import { verifyAdminRole } from './js/admin-auth.js';
+    onAuthStateChanged(auth, async (user) => {
+      if (user && await verifyAdminRole(user.uid)) {
+        window.location.href = 'dashboard.html';
+      }
+    });
+
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passInput = document.getElementById('password');
+    const errorBanner = document.getElementById('loginError');
+    const emailErr = document.getElementById('emailError');
+    const passErr = document.getElementById('passwordError');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function clearErrors() {
+      errorBanner.textContent = '';
+      errorBanner.classList.remove('visible');
+      emailInput.classList.remove('error');
+      passInput.classList.remove('error');
+      emailErr.textContent = '';
+      emailErr.classList.remove('visible');
+      passErr.textContent = '';
+      passErr.classList.remove('visible');
+    }
+
+    function showBannerError(msg) {
+      errorBanner.textContent = msg;
+      errorBanner.classList.add('visible');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+
+      const email = emailInput.value.trim();
+      const password = passInput.value;
+
+      // Basic client-side validation
+      let valid = true;
+      if (!email) {
+        emailInput.classList.add('error');
+        emailErr.textContent = 'Email is required.';
+        emailErr.classList.add('visible');
+        valid = false;
+      }
+      if (!password) {
+        passInput.classList.add('error');
+        passErr.textContent = 'Password is required.';
+        passErr.classList.add('visible');
+        valid = false;
+      }
+      if (!valid) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in…';
+
+      const result = await adminSignIn({ email, password });
+
+      if (result.ok) {
+        window.location.href = 'dashboard.html';
+      } else {
+        showBannerError(result.error);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign in to Admin Panel';
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Admin User - MediScan</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #2563eb;
+      margin-top: 0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .success {
+      background: #d1fae5;
+      color: #065f46;
+      display: block;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      display: block;
+    }
+
+    .info {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>🔐 Create Admin User</h1>
+
+    <div class="info">
+      <strong>⚠️ One-time setup:</strong> This page creates an admin user in Firestore.
+      After creating your admin, delete this file for security.
+    </div>
+
+    <form id="createAdminForm">
+      <div class="form-group">
+        <label>Admin Name</label>
+        <input type="text" id="name" required placeholder="John Doe">
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required placeholder="admin@mediscan.com">
+      </div>
+
+      <div class="form-group">
+        <label>Password (min 6 characters)</label>
+        <input type="password" id="password" required minlength="6" placeholder="••••••••">
+      </div>
+
+      <button type="submit">Create Admin User</button>
+    </form>
+
+    <div id="message" class="message"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './js/admin-firebase.js';
+    import {
+      createUserWithEmailAndPassword,
+      updateProfile
+    } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import {
+      doc,
+      setDoc,
+      serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const form = document.getElementById('createAdminForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        message.className = 'message';
+        message.textContent = 'Creating admin user...';
+        message.style.display = 'block';
+
+        // 1. Create Firebase Auth user
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 2. Update display name
+        await updateProfile(user, { displayName: name });
+
+        // 3. Create admin document in Firestore
+        await setDoc(doc(db, 'admins', user.uid), {
+          role: 'admin',
+          email: email,
+          name: name,
+          createdAt: serverTimestamp(),
+          permissions: ['read', 'write', 'delete']
+        });
+
+        message.className = 'message success';
+        message.innerHTML = `
+          ✅ <strong>Admin user created successfully!</strong><br><br>
+          <strong>Email:</strong> ${email}<br>
+          <strong>UID:</strong> ${user.uid}<br><br>
+          You can now <a href="index.html">sign in to the admin panel</a>.<br><br>
+          <strong>⚠️ Important:</strong> Delete this file (create-admin.html) for security.
+        `;
+        form.style.display = 'none';
+
+      } catch (error) {
+        console.error('Error creating admin:', error);
+        message.className = 'message error';
+
+        const errorMessages = {
+          'auth/email-already-in-use': 'This email is already registered.',
+          'auth/invalid-email': 'Invalid email address.',
+          'auth/weak-password': 'Password must be at least 6 characters.',
+          'auth/operation-not-allowed': 'Email/password sign-in is not enabled in Firebase Console.',
+        };
+
+        message.textContent = errorMessages[error.code] || `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+
+</html>
